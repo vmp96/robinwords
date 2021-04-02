@@ -16,7 +16,9 @@ robinwords.py:
 
 
 Future Improvements:
+
   -Single player mode against a computer. Current functions can be altered so CPU selects a random word neighbor on its turn.
+  
   -Different word list. nltk words may be over inclusive. Still may have some proper nouns which means the game doesn't end for a while.
 
 RobinWords was originally created by Jared Rhizor. This program was written for educational purposes only.
