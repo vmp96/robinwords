@@ -1,6 +1,6 @@
 #### Features:
 - Now there is an option to play against the computer. In the 1 player mode, the CPU will pick a random legal word from the list on its turn. 
-- Pressing enter will no longer return an user error but will instead print the last accepted word. This is helpful when there have been multiple bad attempts and you need to know what the last word was.
+- Attemping to pass an empty string as a word will no longer return an user error but will instead print the last accepted word. This is helpful when there have been multiple bad attempts and you need to know what the last word was.
 
 #### Bug Fixes:
 - Fixed bug that prevented endgame from triggering.
