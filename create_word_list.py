@@ -10,6 +10,7 @@ for name in names.words():
     if len(name) == 4:
         fourLetterNames.update({name.lower():""})
 #remove regular words from name list
+fourLetterNames.pop("hall")
 fourLetterNames.pop("bird")
 fourLetterNames.pop("bill")
 fourLetterNames.pop("bell")

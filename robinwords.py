@@ -26,13 +26,25 @@ def generateTree(dictionary):
 #generate global tree
 
 wordList = None
-with open("four_letter_words.txt", "r") as f:
+with open('four_letter_words.txt', 'r') as f:
     wordList = f.read().splitlines()
-print(len(wordList))
+#Use this list to test endgame:
+#wordList = ["home", "some","same", "tome", "tame", "game"]
+#print(len(wordList))
 tree = generateTree(wordList)
 
+#returns set of numbers from 0 to size-1 in random order. Used for computer game option in getNeighbor and neighborSearch
+def randOrder(size):
+    numbersToPick = [*range(size)]
+    order = []
+    for i in range(size):
+        pick = random.randint(0,size-1-i)
+        order.append(numbersToPick[pick])
+        numbersToPick = numbersToPick[0:pick]+numbersToPick[pick+1:size]
+    return order
+
 #returns word that is still in list that is neighbors with input word
-def neighborSearch(word, wildcard):
+def neighborSearch(word, wildcard, isRandom = False):
     wildcardParent = tree
     for i in range(wildcard):
         childIndex = ord(word[i])-97 
@@ -40,10 +52,13 @@ def neighborSearch(word, wildcard):
             return None
         wildcardParent = wildcardParent.children[childIndex]
     #fixed on wildcardParent. Check each child [a-z] for potential neighbor
-    for i in range(26):
+    order = [*range(26)]
+    if isRandom:
+        order = randOrder(26)
+    for i in order:
         curr = wildcardParent.children[i]
         #skip words not in tree and word matching input
-        if curr == None or curr.key == word[wildcard]:
+        if curr == None or curr.key == word[wildcard] or curr.descendants==0:
             continue
         neighbor = word[:wildcard] + curr.key
         for j in range(1, 4-wildcard):
@@ -53,21 +68,25 @@ def neighborSearch(word, wildcard):
             curr = curr.children[childIndex]
             neighbor+=curr.key
 
-        if len(neighbor) == 4:
+        if len(neighbor) == 4 and curr.descendants != 0:
             return neighbor
     
     return None
 
-#returns the first neighbor that neighborSearch finds
-def getNeighbor(word):
+#Default: returns the first neighbor that neighborSearch finds. In a computer game: picks arbitrary letters as wildcard first. 
+def getNeighbor(word, isRandom = False):
+    letterOrder = [0,1,2,3]
+    if isRandom:
+        letterOrder = randOrder(4)
     for i in range(4):
-        neighbor = neighborSearch(word, i)
+        neighbor = neighborSearch(word, letterOrder[i], isRandom)
         if neighbor != None:
             return neighbor
     return None
 
 def hasNeighbor(word):
-    if getNeighbor(word) == None:
+    neighbor = getNeighbor(word)
+    if neighbor == None:
         return False
     return True
 
@@ -132,19 +151,22 @@ def checkMove():
         #check if word is real 4 letter word
         wordNode = None
         if wordAttempt == "":
-            pass
+            global currentWord
+            err = f"Last Word: {currentWord}"
         elif len(wordAttempt) != 4:
             err = "Must be a real four letter word."
+        elif not wordAttempt.isalpha():
+            err = "Must be a real four letter word of made up of letters [a-z]."
         else:
             wordNode = search(wordAttempt)
-        if wordNode == None:
-            err = "Must be a real four letter word."
-        #check if word was used
-        elif wordNode.descendants == 0:
-            err = "That word has already been used."
-        #check if neighbors
-        elif not wordsAreNeighbors(currentWord,wordAttempt):
-            err = "You can only change one letter at a time."
+            if wordNode == None:
+                err = "Must be a real four letter word."
+            #check if word was used
+            elif wordNode.descendants == 0:
+                err = "That word has already been used."
+            #check if neighbors
+            elif not wordsAreNeighbors(currentWord,wordAttempt):
+                err = "You can only change one letter at a time."
         
         if err != "":
             print(err)
@@ -160,12 +182,38 @@ def nextTurn():
     #wordGiven is a legal move
     #check for victory condition
     if(not hasNeighbor(wordGiven)):
-        return    
+        return True   
     #remove word from tree
     removeWord(wordGiven)
     global currentWord
     currentWord = wordGiven
-    nextTurn()
+    return False
+
+def computerTurn():
+    swapTurn()
+    global currentWord
+    wordGiven = getNeighbor(currentWord, True)
+    print(f"CPU:{wordGiven}")
+    if(not hasNeighbor(wordGiven)):
+        return True   
+    #remove word from tree
+    removeWord(wordGiven)
+    currentWord = wordGiven
+    return False
+
+
+def humanTurn():
+    swapTurn()
+    wordGiven = checkMove()
+    #wordGiven is a legal move
+    #check for victory condition
+    if(not hasNeighbor(wordGiven)):
+        return True   
+    #remove word from tree
+    removeWord(wordGiven)
+    global currentWord
+    currentWord = wordGiven
+    return computerTurn()
 
 def start2p():
     temp = input("Player 1 Name:")
@@ -189,9 +237,41 @@ def start2p():
         currentWord = wordList[random.randint(0,len(wordList)-1)]
     removeWord(currentWord)
     print(currentWord)
-    nextTurn()
+    isEnd = nextTurn()
+    while not isEnd:
+        isEnd = nextTurn()
     #nextTurn returns, game over
     print("There are no more words.")
     print(players[currentPlayer]+" wins!")
 
-start2p()
+def start1p():
+    temp = input("Player Name:")
+    while(len(temp)>16 or temp == ""):
+        if temp == "":
+            temp = input("Please enter a player name:")
+        else:
+            temp = input("Please try a shorter name.")
+    players[0] = temp
+    #pick random word from list to start
+    global currentWord
+    currentWord = wordList[random.randint(0,len(wordList)-1)]
+    while (not hasNeighbor(currentWord)):
+        currentWord = wordList[random.randint(0,len(wordList)-1)]
+    removeWord(currentWord)
+    print(currentWord)
+    isEnd = humanTurn()
+    while not isEnd:
+        isEnd = humanTurn()
+    #nextTurn returns, game over
+    print("There are no more words.")
+    print(players[currentPlayer]+" wins!")
+
+print("Robinwords. Please check readme for instructions.")
+gameMode = input("Play against computer? (Y/N)").capitalize()
+while(gameMode!="Y" and gameMode!="N"):
+    gameMode = input("Play against computer? (Y/N)").capitalize()
+
+if gameMode == "Y":
+    start1p()
+else:
+    start2p()
